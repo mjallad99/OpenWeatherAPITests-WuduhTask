@@ -1,7 +1,13 @@
 package tests;
 
+
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -13,6 +19,21 @@ import static org.hamcrest.number.OrderingComparison.*;
 public class WeatherAPITests {
     private static final String BASE_URL = "http://api.weatherapi.com/v1/current.json";
     private static final String API_KEY = "83d53f15575b4d1d8b681630242811"; // Replace with your API key
+    private ExtentReports extent;
+    private ExtentTest test;
+    @BeforeClass
+    public void setup() {
+        // Set up ExtentReports
+        ExtentSparkReporter htmlReporter = new ExtentSparkReporter("extentReports.html");
+        extent = new ExtentReports();
+        extent.attachReporter(htmlReporter);
+    }
+
+    @AfterClass
+    public void tearDown() {
+        // Flush the report at the end of test execution
+        extent.flush();
+    }
 
     @Test
     public void testStatusCode() {
@@ -24,6 +45,8 @@ public class WeatherAPITests {
                 .get(BASE_URL)
                 .then()
                 .statusCode(200);
+
+
     }
     @Test
     public void testInvalidAPIKey() {
