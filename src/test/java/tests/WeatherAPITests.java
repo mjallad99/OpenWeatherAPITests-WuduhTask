@@ -1,7 +1,6 @@
 package tests;
 
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.testng.annotations.Test;
 
@@ -11,7 +10,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.number.OrderingComparison.*;
 
-public class OpenWeatherAPITests {
+public class WeatherAPITests {
     private static final String BASE_URL = "http://api.weatherapi.com/v1/current.json";
     private static final String API_KEY = "83d53f15575b4d1d8b681630242811"; // Replace with your API key
 
@@ -19,13 +18,38 @@ public class OpenWeatherAPITests {
     public void testStatusCode() {
         RestAssured
                 .given()
-                .queryParam("q", "London")
+                .queryParam("q", "Dubai")
                 .queryParam("key", API_KEY)
                 .when()
                 .get(BASE_URL)
                 .then()
                 .statusCode(200);
     }
+    @Test
+    public void testInvalidAPIKey() {
+        RestAssured
+                .given()
+                .queryParam("key", "53")
+                .queryParam("q", "Amman")
+                .when()
+                .get(BASE_URL)
+                .then()
+                .statusCode(401) // Unauthorized
+                .body("error.message", equalTo("Invalid API key"));
+    }
+    @Test
+    public void testMissingAPIKey() {
+        RestAssured
+                .given()
+                .queryParam("q", "Amman")
+                .when()
+                .get(BASE_URL)
+                .then()
+                .statusCode(401) // Unauthorized
+                .body("error.message", equalTo("API key is invalid or not provided."));
+    }
+
+
     @Test
     public void viewResponseBody() {
        Response response= RestAssured
@@ -37,6 +61,19 @@ public class OpenWeatherAPITests {
                 response.prettyPrint();
 
     }
+    @Test
+    public void testInvalidCityName() {
+        RestAssured
+                .given()
+                .queryParam("key", API_KEY)
+                .queryParam("q", "InvalidCity")
+                .when()
+                .get(BASE_URL)
+                .then()
+                .statusCode(400) // Bad Request
+                .body("error.message", equalTo("No matching location found."));
+    }
+
     @Test
     public void testLocationData() {
         RestAssured
@@ -96,6 +133,44 @@ public class OpenWeatherAPITests {
                 .then()
                 .body(("current.pressure_mb"), greaterThanOrEqualTo(900.0F)) // Pressure should be reasonable
                 .body("current.humidity", allOf(greaterThanOrEqualTo(0), lessThanOrEqualTo(100))); // Humidity between 0-100%
+    }
+    @Test
+    public void testUnsupportedLanguageHeader() {
+        RestAssured
+                .given()
+                .queryParam("key", API_KEY)
+                .queryParam("q", "Amman")
+                .header("Accept-Language", "unsupported-lang")
+                .when()
+                .get(BASE_URL)
+                .then()
+                .statusCode(200)
+                .body("location.name", equalTo("Amman")); // Should default to the correct city name
+    }
+    @Test
+    public void testMultipleCitiesQuery() {
+        RestAssured
+                .given()
+                .queryParam("key", API_KEY)
+                .queryParam("q", "Amman,London")
+                .when()
+                .get(BASE_URL)
+                .then()
+                .statusCode(200)
+                .body("location.name", equalTo("Amman"))
+                .body("location.name", equalTo("London"));
+    }
+    @Test
+    public void testMaxQueryLength() {
+        String longCityName = "A".repeat(300); // Create a very long city name
+        RestAssured
+                .given()
+                .queryParam("key", API_KEY)
+                .queryParam("q", longCityName)
+                .when()
+                .get(BASE_URL)
+                .then()
+                .statusCode(400); // Expecting a bad request due to the long query parameter
     }
 
 
