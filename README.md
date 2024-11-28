@@ -38,5 +38,3 @@ Verifies querying for multiple cities returns correct data for each.
 Verifies that a long city name results in a 400 Bad Request.
 Report Generation
 After running the tests, an HTML report will be generated as extentReports.html in the project directory. This report provides a detailed summary of the test execution, including passed, failed, and skipped tests.
-
-To view the report, open the extentReports.html file in any web browser.
